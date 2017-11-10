@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html>
+	<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+	<title>UI Model View Template</title>
+
+	<link rel="stylesheet" href="css/bootstrap.min.css" />
+	<link rel="stylesheet" href="css/ui-modelview.css" />
+	<link rel="stylesheet" href="css/main.css" />
+
+
+
+	</head>
+
+	<body>
+
+	 <div data-role="page-container">
+
+		<div class="nav" data-role="partial" id="navbar">
+			<ul>
+				<li><a href="#home">Page Templates</a></li>
+				<li><a href="#partials">Partials</a></li>
+				<li><a href="#bind">Bind to Model</a></li>
+				<li><a href="#click">Click Events</a></li>
+				<li><a href="#repeater">Repeating Elements</a></li>
+				<li><a href="#conditional">Conditional Elements</a></li>
+			</ul>
+		</div>
+
+
+		<div data-role="page" id="home" data-onshow="incrementCounter">
+
+			<div class="header"><h1>Page Templates / Routing</h1></div>
+
+				<div data-include="navbar"></div>
+
+				<div class="body">
+					<h3>Page Templates</h3>
+					<p>UI ModelView is based around page templates that are part of a single-page application and hidden until the page is requested by the user. </p>
+
+					<p>
+					To specify a page template, add a <code>data-role="page"</code> attribute and a unique id to a block element. These elements will be hidden by default except for the page id supplied to the <code>init()</code> method. 
+					<pre>ui.init('home');</pre>
+					This initializes the UI framework and shows the page with <code>id="home"</code> as the first page of the app.
+					</p>
+
+					<h3>Routing</h3>
+
+					<p>
+					You can route to any "page" via URL, by using hash notation with the page id. <a href="#partials">#partials</a> will open a different page and add it to the broweser history. 
+					</p>
+
+					<h3>On Show</h3>
+
+					<p>You can assign a method to be called every time a page is loaded by adding the method to ui.pageActions and applying a <code>data-onshow="action"</code> to the page element. 
+
+<pre>
+&lt;div data-role="page" id="home" data-onshow="incrementCounter"&gt;
+
+ui.pageActions = {
+  "incrementCounter" : function() {
+    app.model.counter++;
+    ui.refresh();
+  }
+}	
+</pre>
+					</p>
+
+
+					<p><strong>Example:</strong> This page has been viewed <span data-model="counter"></span> <span data-model="counterText"></span>.</p>
+
+					<p class="boxed"><strong>Next: </strong><a href="#partials">Partial Templates / Includes</a></p>
+
+
+				</div>
+
+		</div>
+
+		<div data-role="page" id="partials">
+
+			<div class="header"><h1>Partial Templates / Includes</h1></div>
+
+			<div data-include="navbar"></div>
+
+			<div class="body">
+				<h3>Partial Templates</h3>
+
+				<p>
+					A "partial" is like a resuable component that you define once and can include in multiple areas. This is useful for global page elements link navigation or footers. The partial can contain bound variables, repeaters and click events. 
+				</p>
+
+				<p>You define a partial template by giving it a <code>data-role="partial"</code> and an id. These templates will be hidden by default.</p>
+
+				<h3>Includes</h3>
+
+				<p>To use a partial template, you insert an include element. When the app loads, the includes will be replaced with the partial.<br>
+				<code>&lt;div data-include="navbar"&gt;&lt;/div&gt;</code>
+				</p>
+
+				<p class="boxed"><strong>Next: </strong><a href="#bind">Bind to Model</a></p>
+
+
+			</div>
+
+		</div>
+
+		<div data-role="page" id="bind">
+
+			<div class="header"><h1>Bind to Model</h1></div>
+
+			<div data-include="navbar"></div>
+
+			<div class="body">
+				<h3>Variable Binding</h3>
+				<p>One of the main concepts of UI ModelView is coincedentally having a data model and a viewstate that can represent that data model.  To bind an element to a property in the data model, add a <code>data-model="firstName"</code> attribute. This will map to the app.model.firstName property and update whenever you call the <code>ui.refresh()</code> method.</p>
+
+				<p>While other MVVM frameworks support automatic refresh, UI ModelView requires you to call the refresh method whenever the model has changed</p>
+
+				<p>The model properties can contain numbers, strings or HTML and that content will be reflected correctly.</p>
+
+				<h3>User Input Binding</h3>
+
+				<p>Formfields can be bound to the model with the <code>data-input</code> attribute. In this case, changing the field will update the model in a one-way fashon. If you use <code>data-model</code> on the form field, the binding will be both ways.</p>
+
+				<p>My name is <strong data-model="firstName"></strong></p>
+				<p><input type="text" style="width: 200px" id="firstName" data-input="firstName" placeholder="Enter your name"></p>
+
+					<p class="boxed"><strong>Next: </strong><a href="#click">Click Events</a></p>
+				
+
+			</div>
+
+		</div>
+
+		<div data-role="page" id="click">
+
+			<div class="header"><h1>Click Events</h1></div>
+
+			<div data-include="navbar"></div>
+
+			<div class="body">
+				<p>Any element can be given a click event by adding a <code>data-click="changeValue"</code> attribute. In the app.js, you add the action to the ui.actions object. You can add any amount of code the menthod specified. Here is a simmple method to change the value of a model property.
+					
+
+<pre>ui.actions = { 
+  "changeValue" : function() {
+    app.model.value1 = (app.model.value1 == "Foo") ? "Bar" : "Foo";
+    ui.refresh();
+  }
+};</pre>
+
+				</p>
+
+				<p><button data-click="changeValue">Click to Change</button></p>
+				<p>The value is: <strong data-model="value1"></strong></p>
+
+				<p class="boxed"><strong>Next: </strong><a href="#repeater">Repeating Elements</a></p>
+
+			</div>
+
+		</div>
+
+
+		<div data-role="page" id="repeater">
+
+			<div class="header"><h1>Repeating Elements</h1></div>
+
+			<div data-include="navbar"></div>
+
+			<div class="body">
+				<p> 
+				You can render an array as a repeating list of elements by using the <code>data-repeat="colorList"</code> attribute. 
+				</p>
+
+				<p>Each item in the array is returned as an "item" object.</p>
+
+<pre>&lt;ul&gt;
+  &lt;li data-repeat="colorList" title="{{item.index}}"&gt;{{item.value}}&lt;/li&gt;
+&lt;/ul&gt;</pre>
+
+				<ul>
+					<li data-repeat="colorList" title="{{item.index}}">{{item.value}}</li>
+				</ul>
+
+				<h3>Simple Array of value</h3>
+
+				<p>If the array is simply a list of valus, you can access to these properties for each item: item.value & item.index. Access these properties using the double-handlebars symbols" {{item.value}} and {{item.index}}</p>
+
+				<h3>Array of objects</h3>
+				<p>If the array contains objects with key-value pairs, you need to access the properties of the object by the keys. It would appear like this using the double-handlebars symbols: {{item.firstName}}, {{item.lastName}}, {{item.email}}</p>
+
+<pre>&lt;table&gt;
+  &lt;tr&gt;&lt;td&gt;First Name&lt;/td&gt;&lt;td&gt;Last Name&lt;/td&gt;&lt;td&gt;Age&lt;/td&gt;&lt;/tr&gt;	
+  &lt;tr data-repeat="userList"&gt;&lt;td&gt;{{item.firstName}}&lt;/td&gt;&lt;td&gt;{{item.lastName}}&lt;/td&gt;&lt;td&gt;{{item.age}}&lt;/td&gt;&lt;/tr&gt;
+&lt;/table&gt;</pre>
+
+<table class="table">
+  <tr><td>First Name</td><td>Last Name</td><td>Age</td></tr>	
+  <tr data-repeat="userList"><td>{{item.firstName}}</td><td>{{item.lastName}}</td><td>{{item.age}}</td></tr>
+</table>
+
+				<h3>Render Array as list</h3>
+				<p>Instead of using a repeater, you can bind an array using the <code>data-model="colorList"</code> attribute on an element, it will join the items with commas. This may not work correctly with complex objects.</p>
+
+				<p data-model="colorList"></p>
+
+				<p class="boxed"><strong>Next: </strong><a href="#conditional">Conditional Elements</a></p>
+
+
+			</div>
+
+		</div>
+
+		<div data-role="page" id="conditional">
+
+			<div class="header"><h1>Conditional Elements</h1></div>
+
+			<div data-include="navbar"></div>
+
+			<div class="body">
+				<p> 
+					You can have an element show only when the specified model property evaluates as true. Select the property by adding <code>data-if="saved"</code>. Note, this must be a property, not an expression.
+				</p>
+
+				<p>Saved: <span data-model="saved"></span></p>
+
+				<p data-if="saved"><strong>The data has been saved</strong></p>
+
+				<button data-click="saveData">Toggle Save</button>
+
+				<p>You can also add an attrbute of <code>data-not="saved"</code> to show this element when the specified property is false. You can combine these to element types to show alternate content.</p>
+
+				<p data-not="saved"><strong>Not Saved</strong></p>
+
+			</div>
+
+		</div>
+
+		</div> <!-- container -->
+	</body>
+
+	<script src="js/ui-modelview.js"></script>	
+	<script src="js/app.js"></script>	
+
+
+</html>
