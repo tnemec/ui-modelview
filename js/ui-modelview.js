@@ -85,7 +85,7 @@
 				ui.hidePages(pageid);
 				addClass(pageEle, 'lower');
 				if(ui.globals.pageContainer ) {
-					ui.globals.pageContainer[0].style.height = pageEle.scrollHeight + 'px';
+					//ui.globals.pageContainer[0].style.height = pageEle.scrollHeight + 'px';
 				}
 			},250);
 			if(! noHistory) pushHistory(pageid);  
@@ -177,7 +177,7 @@
 						ui.watched[ele.ui_model].ele.push(ele);
 						ui.watched[ele.ui_model].value = getModel(ele.ui_model);
 					}
-					ui.setRepeater(ele);
+					//ui.setRepeater(ele);
 				}		
 			}
 		},
@@ -213,7 +213,7 @@
 						ui.watched[ele.ui_model].value = getModel(ele.ui_model);
 					}
 
-					ui.setConditional(ele);							
+					//ui.setConditional(ele);							
 				}
 			}
 		},
@@ -568,6 +568,7 @@
 			if(finalClass == '') obj.removeAttribute('class')
 		}
 	};
+	window.removeClass = removeClass;
 
 	var addClass = function(obj,className) {
 		if(obj) {
@@ -580,13 +581,15 @@
 			}		
 		}
 	};
+	window.addClass = addClass;
+
 	var replaceHandlebars = function(ele, item) {
 		var tokens = findToken(ele.innerHTML);
 		var re;
 		if(tokens) {
 			for(var i = 0; i<tokens.length; i++) {
 				if(item[tokens[i]] != undefined) {
-					re = new RegExp('{{item.'+ tokens[i] +'}}','g');
+					re = new RegExp('{{'+ tokens[i] +'}}','g');
 					ele.innerHTML = ele.innerHTML.replace(re, item[tokens[i]]);
 				}
 			}
@@ -594,11 +597,11 @@
 		return ele;
 	};
 	var findToken = function(str) {
-		var re = /{{item\.[^}]+}}/g;
+		var re = /{{[^}]+}}/g;
 		var tokens = str.match(re);
 		if(tokens && tokens.length > 0){
 			return tokens.map(function(val){
-				return val.replace('{{item.','').replace('}}','');
+				return val.replace('{{','').replace('}}','');
 			});
 		}
 		return undefined;
@@ -679,6 +682,7 @@
 		// returns from app.model by default
 		// the key can be a dot path like data.base.key
 		// returns the property referenced by the key
+		// use by ui.setModelValue(key, value)
 		if(key) {
 			var keys = Array.isArray(key) ? key : key.split('.');
 			var obj = obj || app.model;

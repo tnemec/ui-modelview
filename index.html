@@ -175,31 +175,31 @@ ui.pageActions = {
 				You can render an array as a repeating list of elements by using the <code>data-repeat="colorList"</code> attribute. 
 				</p>
 
-				<p>Each item in the array is returned as an "item" object.</p>
+				<p>Each item in the array will create a clone of the initial element, substituting the tokens in double-handlebars ({{ }}) with the values of each array item.</p>
 
 <pre>&lt;ul&gt;
-  &lt;li data-repeat="colorList" title="{{item.index}}"&gt;{{item.value}}&lt;/li&gt;
+  &lt;li data-repeat="colorList" title="{{index}}"&gt;{{value}}&lt;/li&gt;
 &lt;/ul&gt;</pre>
 
 				<ul>
-					<li data-repeat="colorList" title="{{item.index}}">{{item.value}}</li>
+					<li data-repeat="colorList" title="{{index}}">{{value}}</li>
 				</ul>
 
 				<h3>Simple Array of value</h3>
 
-				<p>If the array is simply a list of valus, you can access to these properties for each item: item.value & item.index. Access these properties using the double-handlebars symbols" {{item.value}} and {{item.index}}</p>
+				<p>If the array is simply a list of valus, you can access to these properties for each item: value & index. Access these properties using the double-handlebars symbols" {{value}} and {{index}}</p>
 
 				<h3>Array of objects</h3>
-				<p>If the array contains objects with key-value pairs, you need to access the properties of the object by the keys. It would appear like this using the double-handlebars symbols: {{item.firstName}}, {{item.lastName}}, {{item.email}}</p>
+				<p>If the array contains objects with key-value pairs, you need to access the properties of the object by the keys. It would appear like this using the double-handlebars symbols: {{firstName}}, {{lastName}}, {{email}}</p>
 
 <pre>&lt;table&gt;
   &lt;tr&gt;&lt;td&gt;First Name&lt;/td&gt;&lt;td&gt;Last Name&lt;/td&gt;&lt;td&gt;Age&lt;/td&gt;&lt;/tr&gt;	
-  &lt;tr data-repeat="userList"&gt;&lt;td&gt;{{item.firstName}}&lt;/td&gt;&lt;td&gt;{{item.lastName}}&lt;/td&gt;&lt;td&gt;{{item.age}}&lt;/td&gt;&lt;/tr&gt;
+  &lt;tr data-repeat="userList"&gt;&lt;td&gt;{{firstName}}&lt;/td&gt;&lt;td&gt;{{lastName}}&lt;/td&gt;&lt;td&gt;{{age}}&lt;/td&gt;&lt;/tr&gt;
 &lt;/table&gt;</pre>
 
 <table class="table">
   <tr><td>First Name</td><td>Last Name</td><td>Age</td></tr>	
-  <tr data-repeat="userList"><td>{{item.firstName}}</td><td>{{item.lastName}}</td><td>{{item.age}}</td></tr>
+  <tr data-repeat="userList"><td>{{firstName}}</td><td>{{lastName}}</td><td>{{age}}</td></tr>
 </table>
 
 				<h3>Render Array as list</h3>
