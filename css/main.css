@@ -12,9 +12,6 @@ div, p, button, input {
 	font-family: "helvetica neue", helvetica, arial, sans-serif;
 	font-size: 14px;
 }
-[data-role="page"] {
-	max-width: 1200px;
-}
 
 
 .header {

@@ -136,21 +136,20 @@
 					var dataAttr = ele.getAttribute('data-attr').split(',');
 					var attr = dataAttr[0];
 					var key = dataAttr[1];
-					if(getModel(key) != undefined) {
-						addClass(ele, 'ui-bindAttr');
-						ele.removeAttribute('data-attr');
-						ui.setAttr(ele,attr,key);
-						if(ui.watched[key] == undefined) {
-							ui.watched[key] = {
-								attr: [{'ele': ele, 'attr' : attr}],
-								value: getModel(key)
-							}
-						} else {
-							ui.watched[key].ele.push(ele);
-							ui.watched[key].attr.push(attr);
-							ui.watched[key].value = getModel(key);
+					console.log(key)
+					addClass(ele, 'ui-bindAttr');
+					ele.removeAttribute('data-attr');
+					
+					if(ui.watched[key] == undefined) {
+						ui.watched[key] = {
+							attr: [{'ele': ele, 'attr' : attr}],
+							value: getModel(key)
 						}
+					} else {
+						ui.watched[key].attr.push({'ele': ele, 'attr' : attr});
+						ui.watched[key].value = getModel(key);
 					}
+					ui.setAttr(ele,attr,key);
 				}
 			}
 		},
@@ -161,10 +160,10 @@
 				for(var i = 0; i < elements.length; i++) {
 					var ele = elements[i];	
 					ele.ui_repeat = true;
-					ele.ui_model = ele.getAttribute('data-repeat');					
+					ele.ui_model = ele.getAttribute('data-repeat');			
 					ele.removeAttribute('data-repeat');
 					addClass(ele, 'ui-repeat');
-
+					console.log(ele.ui_model)
 					// clone ele to preserve template
 					ui.templates[ele.ui_model] = ele.cloneNode(true);
 
@@ -177,8 +176,11 @@
 						ui.watched[ele.ui_model].ele.push(ele);
 						ui.watched[ele.ui_model].value = getModel(ele.ui_model);
 					}
-					//ui.setRepeater(ele);
-				}		
+					
+				}
+				for(var i = 0; i < elements.length; i++) {
+					ui.setRepeater(elements[i]);
+				}
 			}
 		},
 		getConditionals : function() {
@@ -225,20 +227,22 @@
 				for(var i = 0; i < elements.length; i++) {
 					var ele = elements[i];
 					var attr = ele.getAttribute('data-model');
-					if(keys.indexOf(attr) != -1 ) {
-						ele.ui_model = attr;
-						addClass(ele, 'ui-bind');
-						ele.removeAttribute('data-model');
-						ui.setVar(ele)
-						if(ui.watched[ele.ui_model] == undefined) {
-							ui.watched[ele.ui_model] = {
-								ele: [ele],
-								value: cloneObj(app.model[ele.ui_model])
-							}
-						} else {
-							ui.watched[ele.ui_model].ele.push(ele);
-							ui.watched[ele.ui_model].value = cloneObj(app.model[ele.ui_model]);
+					var model = getModel(attr);
+					console.log('var ' + attr)
+					ele.ui_model = attr;
+					addClass(ele, 'ui-bind');
+					ele.removeAttribute('data-model');
+					//ui.setVar(ele)
+					if(ui.watched[ele.ui_model] == undefined) {
+						ui.watched[ele.ui_model] = {
+							ele: [ele],
+							//value: cloneObj(app.model[ele.ui_model])
+							value: model
 						}
+					} else {
+						ui.watched[ele.ui_model].ele.push(ele);
+						//ui.watched[ele.ui_model].value = cloneObj(app.model[ele.ui_model]);
+						ui.watched[ele.ui_model].value = model;
 					}
 				}
 			}
@@ -254,7 +258,6 @@
 			if(ele) {
 				var val = getModel(model);
 				console.log('setVar ' + model + ' : ' + val);
-				console.log(ele);
 				if(Array.isArray(val)) {
 					val = val.join(', ');
 				}
@@ -264,7 +267,8 @@
 				} else {
 					// plain element
 					ele.innerHTML = val;
-				}					
+				}	
+				console.log(ele)				
 			}
 		},
 		setAttr : function(ele, attr, model) {
@@ -276,7 +280,13 @@
 				if(Array.isArray(val)) {
 					val = val.join(', ');
 				}
-				ele.setAttribute(attr,val) ;
+				if(attr == 'class') {
+					var prevVal = ui.watched[model].value;
+					removeClass(ele,prevVal);
+					addClass(ele,val);
+				} else {
+					ele.setAttribute(attr,val) ;
+				}
 				if(val == null) {
 					ele.removeAttribute(attr);
 				} 
@@ -287,8 +297,8 @@
 		setConditional : function(ele) {
 			// this is used only for conditional elements
 			// adds a "show" or "hide" class to the ele based on the show argument (bool)
-			if(ele && app.model[ele.ui_model] != undefined) {
-				var show = app.model[ele.ui_model];
+			if(ele) {
+				var show = getModel(ele.ui_model);
 				console.log('setConditional ' + ele.ui_model)
 				if(ele.ui_conditional == 'not') {
 					show = !show;
@@ -308,7 +318,6 @@
 			if(ele.ui_model) {
 				var model = getModel(ele.ui_model);
 				console.log(model)
-
 				if(Array.isArray(model)) {
 					var template = ui.templates[ele.ui_model];
 					var newEle;
@@ -414,6 +423,8 @@
 
 			// find all clickable elements
 			ui.setActions();
+
+
 		},
 
 		init : function(defaultpage){
@@ -637,7 +648,7 @@
 
 	var isInput = function(ele) {
 		var types = ['input','number','date'];
-		if(types.indexOf(ele.type)) {
+		if(types.indexOf(ele.type) != -1) {
 			return true;
 		}
 		return false;

@@ -6,6 +6,7 @@ body {
 	overflow: hidden;
 	position: relative;
 	z-index: 1;
+	height: 100%;
 }
 
 [data-role="page"] {
@@ -13,11 +14,13 @@ body {
 	left: 100%;
 	top: 0;
 	width: 0;
+	max-width: 100%;
 	margin: 0 ;
 	border: 1px solid #ddd;
 	border-width: 0 1px;
 	transition: left 0.24s ease;
 	background-color: #FFF;
+s
 }
 
 
