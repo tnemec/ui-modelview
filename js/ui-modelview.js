@@ -160,7 +160,9 @@
 				for(var i = 0; i < elements.length; i++) {
 					var ele = elements[i];	
 					ele.ui_repeat = true;
-					ele.ui_model = ele.getAttribute('data-repeat');			
+					ele.ui_model = ele.getAttribute('data-repeat');	
+					ele.ui_context = ele.getAttribute('data-context')
+
 					ele.removeAttribute('data-repeat');
 					addClass(ele, 'ui-repeat');
 					console.log(ele.ui_model)
@@ -317,6 +319,26 @@
 			console.log('setRepeater ' + ele.ui_model);
 			if(ele.ui_model) {
 				var model = getModel(ele.ui_model);
+				if(ele.ui_context) {
+					console.log('has context ' + ele.ui_context)
+					var parent = document.querySelectorAll('[data-template="'+ ele.ui_context +'"]');
+					if(parent && parent[0]) {
+						console.log('found parent')
+						if(! parent[0].ui_processed) {
+							ui.setRepeater(parent[0]);
+							ui.setRepeater(ele);
+							return false;
+						} else if(!model) {
+							console.log('set model ' + ele.ui_context + '[' + parent[0].ui_index + '].' +  ele.ui_model)
+							var context = getModel(ele.ui_context);
+							if(context) {
+								model = context[parent[0].ui_index];	
+								model = model[ele.ui_model];	
+							}
+							
+						}
+					} 
+				}
 				console.log(model)
 				if(Array.isArray(model)) {
 					var template = ui.templates[ele.ui_model];
@@ -338,9 +360,9 @@
 						item.index = k;
 						newEle = replaceHandlebars(template.cloneNode(true), item);
 						newEle.setAttribute('data-template', ele.ui_model)
+						newEle.ui_index = item.index;
+						newEle.ui_processed = true;
 						ele.parentNode.appendChild(newEle);
-
-
 					} 
 					// check for new bindings
 					ui.initBindings();
@@ -593,20 +615,40 @@
 		}
 	};
 	window.addClass = addClass;
-
-	var replaceHandlebars = function(ele, item) {
+/*
+	var replaceHandlebars = function(ele, item, protect) {
 		var tokens = findToken(ele.innerHTML);
 		var re;
 		if(tokens) {
 			for(var i = 0; i<tokens.length; i++) {
 				if(item[tokens[i]] != undefined) {
 					re = new RegExp('{{'+ tokens[i] +'}}','g');
-					ele.innerHTML = ele.innerHTML.replace(re, item[tokens[i]]);
+					if(protect) {
+						ele.innerHTML = ele.innerHTML.replace(re, '{{p.'+ tokens[i] +'}}');
+					} else {
+						ele.innerHTML = ele.innerHTML.replace(re, item[tokens[i]]);
+					}
+					
 				}
 			}
 		}
 		return ele;
 	};
+
+	var replaceTokens = function(ele, tokens) {
+		var re;
+		if(tokens) {
+			for(var i = 0; i<tokens.length; i++) {
+				if(item[tokens[i]] != undefined) {
+					re = new RegExp('{{'+ tokens[i] +'}}','g');
+					ele.innerHTML = ele.innerHTML.replace(re, item[tokens[i]]);
+
+				}
+			}
+		}
+		return ele;
+	};
+
 	var findToken = function(str) {
 		var re = /{{[^}]+}}/g;
 		var tokens = str.match(re);
@@ -617,6 +659,32 @@
 		}
 		return undefined;
 	};
+
+
+*/
+	var replaceHandlebars = function(ele, item) {
+		var re = /{{([^}]+)}}/g;
+		for(var i = 0; i < ele.children.length; i++) {
+			var child = ele.children[i];
+			var attrNames = child.getAttributeNames();
+			for(var j = 0; j < attrNames.length; j++) {
+				// replace any tokens in attributes
+				child.setAttribute(attrNames[j], child.getAttribute(attrNames[j]).replace(re, function(str,p1){
+					return item[p1];
+				}))
+			}
+			if(!child.getAttribute('data-repeat')) {
+				// replace tokens in innerHTML but not in child elements that are repeaters
+				var str = child.innerHTML.replace(re,function(str,p1){
+						return item[p1];
+					});
+				child.innerHTML = str;				
+			}
+		}
+		return ele;
+	};
+
+
 	var pushHistory = function(hash) {
 		if(history.pushState) {
 		    history.pushState(null, null, '#' + hash);
@@ -673,16 +741,29 @@
 		// the key can be a dot path like data.base.key
 		// returns the property referenced by the key
 		if(key) {
+			var debug = 'getModel ';
 		  var keys = Array.isArray(key) ? key : key.split('.');
 		  var obj = obj || app.model;
 		  for (var i = 0; i < keys.length; i++) {
 		    var key = keys[i];
+
 		    if (!obj || !hasOwnProp.call(obj, key)) {
-		      obj = undefined;
-		      break;
+		    	obj = undefined;
+				break;
 		    }
-		    obj = obj[key];
+		    var arrayIndex = key.match(/([^\]]+)\[([0-9]+)\]/);
+		    if(arrayIndex && arrayIndex.length == 3) {
+		    	// this key has an array index
+		    	obj = obj[arrayIndex[1]];
+		    	obj = obj[arrayIndex[2]];
+		    	debug += arrayIndex[1] + ' ' + arrayIndex[2] + ' '
+		    } else {
+		    	obj = obj[key];
+		   		debug += key + ' '
+		    }
+		    
 		  }
+		  console.log(debug)
 		  return obj;
 		}
 	};
