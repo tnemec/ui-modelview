@@ -33,8 +33,13 @@ div, p, button, input {
 .body {
 	padding: 12px 16px;
 	margin: 0 auto;
-	max-width: 640px;
+	max-width: 960px;
 }
+
+[data-role="page-container"] {
+	max-width: 960px;
+}
+
 
 .nav {
 	padding: 0;

@@ -4,6 +4,7 @@
 
 		globals : {
 			hasDebug : false,
+			depth: 0
 		},
 		actions : {},
 		pageActions: {},
@@ -14,27 +15,7 @@
 		attrs : [],
 		templates : [],
 
-		setActions : function(){
-			// scan dom to find unbound action elements
-			var elements = document.querySelectorAll('[data-click]');
-			var keys = Object.keys(ui.actions);
 
-			for (var i = 0; i < elements.length; i++) {
-				var ele = elements[i];
-				action = ele.getAttribute('data-click');
-				if(keys.indexOf(action) != -1) {
-					ele.onclick = function(event) {
-						// pass the caller to action function
-						event.stopPropagation();
-						ui.actions[this.getAttribute('data-action')](event.target);
-					}
-					addClass(ele,'clickable');
-					ele.setAttribute('data-action', action);
-					ele.removeAttribute('data-click');
-				}
-
-			}
-		},
 		getPages : function() {
 			ui.pages = document.querySelectorAll('[data-role="page"]');
 			ui.globals.pageContainer = document.querySelectorAll('[data-role="page-container"]');
@@ -134,9 +115,8 @@
 				for(var i = 0; i < elements.length; i++) {
 					var ele = elements[i];
 					var dataAttr = ele.getAttribute('data-attr').split(',');
-					var attr = dataAttr[0];
-					var key = dataAttr[1];
-					console.log(key)
+					var attr = dataAttr[0].trim();
+					var key = dataAttr[1].trim();
 					addClass(ele, 'ui-bindAttr');
 					ele.removeAttribute('data-attr');
 					
@@ -161,24 +141,23 @@
 					var ele = elements[i];	
 					ele.ui_repeat = true;
 					ele.ui_model = ele.getAttribute('data-repeat');	
-					ele.ui_context = ele.getAttribute('data-context')
+					if(getModel(ele.ui_model) != undefined) {
+						ele.removeAttribute('data-repeat');
+						addClass(ele, 'ui-repeat');
+						if(ui.watched[ele.ui_model] == undefined) {
+							ui.watched[ele.ui_model] = {
+								ele: [ele],
+								value: getModel(ele.ui_model)
+							}
 
-					ele.removeAttribute('data-repeat');
-					addClass(ele, 'ui-repeat');
-					console.log(ele.ui_model)
-					// clone ele to preserve template
-					ui.templates[ele.ui_model] = ele.cloneNode(true);
-
-					if(ui.watched[ele.ui_model] == undefined) {
-						ui.watched[ele.ui_model] = {
-							ele: [ele],
-							value: getModel(ele.ui_model)
+						} else {
+							ui.watched[ele.ui_model].ele.push(ele);
+							ui.watched[ele.ui_model].value = getModel(ele.ui_model);
 						}
 					} else {
-						ui.watched[ele.ui_model].ele.push(ele);
-						ui.watched[ele.ui_model].value = getModel(ele.ui_model);
+						console.log('cannot define repeater ' + ele.ui_model);
+						//return false;
 					}
-					
 				}
 				for(var i = 0; i < elements.length; i++) {
 					ui.setRepeater(elements[i]);
@@ -256,6 +235,37 @@
 				ui.globals.debugElements = elements;
 			}
 		},
+		resetActions : function(ele) {
+			// resets an element to be able to reassign the event listeners
+			// this is needed on repeated elements as the event will not clone
+			var action = ele.getAttribute('data-action');
+			if(action) {
+				ele.setAttribute('data-click', action);
+				removeClass(ele,'clickable');				
+			}
+		},
+		setActions : function(){
+			// scan dom to find unbound action elements
+			var elements = document.querySelectorAll('[data-click]');
+			var keys = Object.keys(ui.actions);
+
+			for (var i = 0; i < elements.length; i++) {
+				var ele = elements[i];
+				action = ele.getAttribute('data-click');
+				if(keys.indexOf(action) != -1) {
+					ele.onclick = function(event) {
+						// pass the caller to action function
+						console.log('click')
+						event.stopPropagation();
+						ui.actions[this.getAttribute('data-action')](event.target);
+					}
+					addClass(ele,'clickable');
+					ele.setAttribute('data-action', action);
+					ele.removeAttribute('data-click');
+				}
+
+			}
+		},
 		setVar : function(ele, model) {
 			if(ele) {
 				var val = getModel(model);
@@ -290,7 +300,12 @@
 					ele.setAttribute(attr,val) ;
 				}
 				if(val == null) {
-					ele.removeAttribute(attr);
+					if(attr == 'class') {
+						removeClass(ele,attr);
+					} else {
+						ele.removeAttribute(attr);	
+					}
+					
 				} 
 								
 			}
@@ -316,63 +331,56 @@
 			}		
 		},
 		setRepeater : function(ele) {
-			console.log('setRepeater ' + ele.ui_model);
+
 			if(ele.ui_model) {
+				console.log('setRepeater ' + ele.ui_model);
 				var model = getModel(ele.ui_model);
-				if(ele.ui_context) {
-					console.log('has context ' + ele.ui_context)
-					var parent = document.querySelectorAll('[data-template="'+ ele.ui_context +'"]');
-					if(parent && parent[0]) {
-						console.log('found parent')
-						if(! parent[0].ui_processed) {
-							ui.setRepeater(parent[0]);
-							ui.setRepeater(ele);
-							return false;
-						} else if(!model) {
-							console.log('set model ' + ele.ui_context + '[' + parent[0].ui_index + '].' +  ele.ui_model)
-							var context = getModel(ele.ui_context);
-							if(context) {
-								model = context[parent[0].ui_index];	
-								model = model[ele.ui_model];	
+				
+				if(ui.watched[ele.ui_model] != undefined) {
+					
+					for(var j = 0; j < ui.watched[ele.ui_model].ele.length; j++) {
+						if(Array.isArray(model)) {
+							var template = ui.watched[ele.ui_model].ele[j];
+							// reset actions
+							ui.resetActions(ele);
+							var clickableEle = template.querySelectorAll('[data-action]');
+							for (var i = 0; i < clickableEle.length; i++) {
+								ui.resetActions(clickableEle[i]);	
+							}								
+							var newEle;
+							var children = template.parentNode.querySelectorAll('[data-template="'+ template.ui_model +'"]'); // remove existing repeaters so we can add them again
+							for(var i = 0; i < children.length; i++) {
+								children[i].parentNode.removeChild(children[i]);
 							}
-							
-						}
-					} 
-				}
-				console.log(model)
-				if(Array.isArray(model)) {
-					var template = ui.templates[ele.ui_model];
-					var newEle;
-					removeClass(ele, 'hide');
-					var children = ele.parentNode.querySelectorAll('[data-template="'+ ele.ui_model +'"]');
-					for(var i = 0; i < children.length; i++) {
-						children[i].parentNode.removeChild(children[i]);
-					}
 
-					for(var k = 0; k < model.length; k++) {
-						var item = {};
-						if(typeof model[k] == 'object') {
-							item = cloneObj(model[k]);
+							for(var k = 0; k < model.length; k++) {
+								var item = {};
+								if(typeof model[k] == 'object') {
+									item = cloneObj(model[k]);
+								} else {
+									// simple array with just values
+									item.value = model[k];
+								}
+								item.index = k;
+								ui.globals.depth = 0; // reset depth
+								newEle = replaceHandlebars(template.cloneNode(true), item);
+								removeClass(newEle, 'hide');
+								newEle.setAttribute('data-template', ele.ui_model)
+								newEle.ui_index = item.index;
+								template.parentNode.appendChild(newEle);
+							} 
+							// check for new bindings
+							ui.initBindings();
+
 						} else {
-							// simple array with just values
-							item.value = model[k];
+							console.log('cannot set repeater');
 						}
-						item.index = k;
-						newEle = replaceHandlebars(template.cloneNode(true), item);
-						newEle.setAttribute('data-template', ele.ui_model)
-						newEle.ui_index = item.index;
-						newEle.ui_processed = true;
-						ele.parentNode.appendChild(newEle);
-					} 
-					// check for new bindings
-					ui.initBindings();
 
-				} else {
-					console.log('cannot set repeater');
+						// hide original node
+						addClass(template, 'hide');	
+
+					}
 				}
-
-				// hide original node
-				addClass(ele, 'hide');	
 			}					
 		},
 		hasChanged : function(model) {
@@ -595,10 +603,8 @@
 			var objClass = obj.getAttribute && obj.getAttribute( "class" ) || "";
 			objClass = " " + objClass + " ";
 			var finalClass = objClass.replace(" " + className + " ", "").replace(/[ ]+/g,' ').replace(/^ | $/g,'');
-			if(objClass != finalClass) {
-				obj.setAttribute('class', finalClass);
-			}		
-			if(finalClass == '') obj.removeAttribute('class')
+			obj.className = finalClass;	
+			if(finalClass == '') obj.removeAttribute('class');
 		}
 	};
 	window.removeClass = removeClass;
@@ -664,22 +670,40 @@
 */
 	var replaceHandlebars = function(ele, item) {
 		var re = /{{([^}]+)}}/g;
-		for(var i = 0; i < ele.children.length; i++) {
-			var child = ele.children[i];
-			var attrNames = child.getAttributeNames();
+		if(ele && item != undefined) {
+			var attrNames = ele.getAttributeNames();
 			for(var j = 0; j < attrNames.length; j++) {
 				// replace any tokens in attributes
-				child.setAttribute(attrNames[j], child.getAttribute(attrNames[j]).replace(re, function(str,p1){
-					return item[p1];
+				
+				ele.setAttribute(attrNames[j], ele.getAttribute(attrNames[j]).replace(re, function(str,p1){
+					console.log('attr ' + ele.getAttribute(attrNames[j]) + ' ' + item[p1])
+					return (item[p1] != undefined) ? item[p1] : '';
 				}))
-			}
-			if(!child.getAttribute('data-repeat')) {
-				// replace tokens in innerHTML but not in child elements that are repeaters
-				var str = child.innerHTML.replace(re,function(str,p1){
-						return item[p1];
+			}	
+			
+			if(ui.globals.depth == 0 || (ele.getAttribute('data-repeat') == null && ele.className.indexOf('ui-repeat') == -1)) {
+				console.log('replaceHandlebars ' + ui.globals.depth + ' '  +  ele.tagName)
+				console.log('rpt ' + ele.getAttribute('data-repeat') )
+				ui.globals.depth ++;
+				// ignore the root element but stop when encountering child repeater
+				if(ele.children.length) {
+					// recursive function to go through each child element
+					for(var i = 0; i < ele.children.length; i++) {
+						console.log('child ' + ele.children[i].tagName)
+						replaceHandlebars(ele.children[i], item);
+					}
+				} else {
+					// replace tokens in innerHTML
+					var str = ele.innerHTML.replace(re,function(str,p1){
+						console.log(str)
+						return (item[p1] != undefined) ? item[p1] : '';
 					});
-				child.innerHTML = str;				
+					ele.innerHTML = str;					
+				}
+
+
 			}
+
 		}
 		return ele;
 	};
@@ -739,31 +763,28 @@
 	var getModel = function(key, obj) {
 		// returns from app.model by default
 		// the key can be a dot path like data.base.key
+		// you can also reference an array index like data.base.array[0]
 		// returns the property referenced by the key
 		if(key) {
-			var debug = 'getModel ';
 		  var keys = Array.isArray(key) ? key : key.split('.');
 		  var obj = obj || app.model;
 		  for (var i = 0; i < keys.length; i++) {
 		    var key = keys[i];
-
 		    if (!obj || !hasOwnProp.call(obj, key)) {
-		    	obj = undefined;
-				break;
-		    }
-		    var arrayIndex = key.match(/([^\]]+)\[([0-9]+)\]/);
-		    if(arrayIndex && arrayIndex.length == 3) {
-		    	// this key has an array index
-		    	obj = obj[arrayIndex[1]];
-		    	obj = obj[arrayIndex[2]];
-		    	debug += arrayIndex[1] + ' ' + arrayIndex[2] + ' '
+				var arrayIndex = key.match(/([^\]]+)\[([0-9]+)\]/);
+			    if(arrayIndex && arrayIndex.length == 3) {
+			    	// this key has an array index
+			    	obj = obj[arrayIndex[1]];
+			    	obj = obj[arrayIndex[2]];
+			    } else {
+			    	obj = undefined;
+			    	break;
+			    }
 		    } else {
-		    	obj = obj[key];
-		   		debug += key + ' '
+			    obj = obj[key]; 	
 		    }
 		    
 		  }
-		  console.log(debug)
 		  return obj;
 		}
 	};
